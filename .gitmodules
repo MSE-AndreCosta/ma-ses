@@ -1,0 +1,6 @@
+[submodule "resources"]
+	path = resources
+	url = https://github.com/MA-SeS/resources.git
+[submodule "buildroot"]
+	path = buildroot
+	url = https://github.com/buildroot/buildroot
