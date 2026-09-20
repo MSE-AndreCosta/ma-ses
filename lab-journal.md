@@ -256,3 +256,95 @@ Password:
 # 
 ```
 
+*Modify your config to use U-Boot instead of the proprietary firmware*
+
+1. Enable u-boot and set a dummy value for its defconfig
+    ```kconfig
+    BR2_TARGET_UBOOT=y
+    BR2_TARGET_UBOOT_BOARD_DEFCONFIG="test"
+    ```
+
+2. Fetch u-boot sources:
+    ```bash
+    make uboot-source
+    make uboot-extract
+    ```
+3. Find related defconfigs:
+    ```bash
+    ll output/build/uboot-2025.01/configs | grep raspberrypi4
+    ll output/build/uboot-2025.01/configs | grep rpi4
+    ll output/build/uboot-2025.01/configs | grep rpi
+    -rw-r--r--. 1 andre andre 1.3K Jan  7  2025 rpi_0_w_defconfig
+    -rw-r--r--. 1 andre andre 1.3K Jan  7  2025 rpi_2_defconfig
+    -rw-r--r--. 1 andre andre 1.4K Jan  7  2025 rpi_3_32b_defconfig
+    -rw-r--r--. 1 andre andre 1.6K Jan  7  2025 rpi_3_b_plus_defconfig
+    -rw-r--r--. 1 andre andre 1.6K Jan  7  2025 rpi_3_defconfig
+    -rw-r--r--. 1 andre andre 1.8K Jan  7  2025 rpi_4_32b_defconfig
+    -rw-r--r--. 1 andre andre  179 Jan  7  2025 rpi_4_acpi_defconfig
+    -rw-r--r--. 1 andre andre 1.9K Jan  7  2025 rpi_4_defconfig
+    -rw-r--r--. 1 andre andre 1.7K Jan  7  2025 rpi_arm64_defconfig
+    -rw-r--r--. 1 andre andre 1.3K Jan  7  2025 rpi_defconfig
+    ```
+4. Set the uboot defconfig via `BR2_TARGET_UBOOT_BOARD_DEFCONFIG`:
+
+    *Name of the board for which U-Boot should be built, without the _defconfig suffix.*
+
+    ```bash
+    BR2_TARGET_UBOOT_BOARD_DEFCONFIG=rpi_4
+    ```
+*Consequently, we must modify genimage.cfg.in so that the Linux kernel will be added to the vfat filesystem. Do this by adding the following line in the files = { section*
+
+Instead we can modify the `post-image.sh` script accordingly:
+
+```patch
+diff --git a/board/raspberrypi/config_4_64bit.txt b/board/raspberrypi/config_4_64bit.txt
+index 2eef6dd1a2..f90482a4b1 100644
+--- a/board/raspberrypi/config_4_64bit.txt
++++ b/board/raspberrypi/config_4_64bit.txt
+@@ -7,7 +7,7 @@
+ start_file=start4.elf
+ fixup_file=fixup4.dat
+ 
+-kernel=Image
++kernel=u-boot.bin
+ 
+ # To use an external initramfs file
+ #initramfs rootfs.cpio.gz
+diff --git a/board/raspberrypi/post-image.sh b/board/raspberrypi/post-image.sh
+index 9b9eac972b..5632b20561 100755
+--- a/board/raspberrypi/post-image.sh
++++ b/board/raspberrypi/post-image.sh
+@@ -18,6 +18,7 @@ if [ ! -e "${GENIMAGE_CFG}" ]; then
+ 
+ 	KERNEL=$(sed -n 's/^kernel=//p' "${BINARIES_DIR}/rpi-firmware/config.txt")
+ 	FILES+=( "${KERNEL}" )
++	FILES+=("Image")
+ 
+ 	BOOT_FILES=$(printf '\\t\\t\\t"%s",\\n' "${FILES[@]}")
+ 	sed "s|#BOOT_FILES#|${BOOT_FILES}|" "${BOARD_DIR}/genimage.cfg.in" \
+```
+
+
+```bash
+U-Boot 2025.01 (Sep 20 2026 - 15:01:05 +0200)
+
+DRAM:  924 MiB
+RPI 4 Model B (0xa03115)
+Core:  213 devices, 17 uclasses, devicetree: board
+MMC:   mmcnr@7e300000: 1, mmc@7e340000: 0
+Loading Environment from FAT... Unable to read "uboot.env" from mmc0:1... 
+In:    serial,usbkbd
+Out:   serial,vidconsole
+Err:   serial,vidconsole
+Net:   eth0: ethernet@7d580000
+
+PCIe BRCM: link up, 5.0 Gbps x1 (SSC)
+starting USB...
+Bus xhci_pci: Register 5000420 NbrPorts 5
+Starting the controller
+USB XHCI 1.00
+scanning bus xhci_pci for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+Hit any key to stop autoboot:  0 
+U-Boot> 
+```

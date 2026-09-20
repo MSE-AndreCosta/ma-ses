@@ -1,0 +1,52 @@
+From b5de129726c30bf6ecb73581b0dbe4d6acc9629b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Andr=C3=A9=20Costa?= <andre_miguel_costa@hotmail.com>
+Date: Sun, 20 Sep 2026 15:14:19 +0200
+Subject: [PATCH 2/2] board: raspberrypi: boot into u-boot
+
+---
+ board/raspberrypi/config_4_64bit.txt | 2 +-
+ board/raspberrypi/post-image.sh      | 1 +
+ configs/raspberrypi4_64_defconfig    | 2 ++
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/board/raspberrypi/config_4_64bit.txt b/board/raspberrypi/config_4_64bit.txt
+index 2eef6dd1a2..f90482a4b1 100644
+--- a/board/raspberrypi/config_4_64bit.txt
++++ b/board/raspberrypi/config_4_64bit.txt
+@@ -7,7 +7,7 @@
+ start_file=start4.elf
+ fixup_file=fixup4.dat
+ 
+-kernel=Image
++kernel=u-boot.bin
+ 
+ # To use an external initramfs file
+ #initramfs rootfs.cpio.gz
+diff --git a/board/raspberrypi/post-image.sh b/board/raspberrypi/post-image.sh
+index 9b9eac972b..f88d4de560 100755
+--- a/board/raspberrypi/post-image.sh
++++ b/board/raspberrypi/post-image.sh
+@@ -18,6 +18,7 @@ if [ ! -e "${GENIMAGE_CFG}" ]; then
+ 
+ 	KERNEL=$(sed -n 's/^kernel=//p' "${BINARIES_DIR}/rpi-firmware/config.txt")
+ 	FILES+=( "${KERNEL}" )
++	FILES+=("Image")
+ 
+ 	BOOT_FILES=$(printf '\\t\\t\\t"%s",\\n' "${FILES[@]}")
+ 	sed "s|#BOOT_FILES#|${BOOT_FILES}|" "${BOARD_DIR}/genimage.cfg.in" \
+diff --git a/configs/raspberrypi4_64_defconfig b/configs/raspberrypi4_64_defconfig
+index ecc1c6c20e..218165082e 100644
+--- a/configs/raspberrypi4_64_defconfig
++++ b/configs/raspberrypi4_64_defconfig
+@@ -29,6 +29,8 @@ BR2_TARGET_ROOTFS_EXT2=y
+ BR2_TARGET_ROOTFS_EXT2_4=y
+ BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
+ # BR2_TARGET_ROOTFS_TAR is not set
++BR2_TARGET_UBOOT=y
++BR2_TARGET_UBOOT_BOARD_DEFCONFIG="rpi_4"
+ BR2_PACKAGE_HOST_DOSFSTOOLS=y
+ BR2_PACKAGE_HOST_GENIMAGE=y
+ BR2_PACKAGE_HOST_KMOD_XZ=y
+-- 
+2.55.0
+
